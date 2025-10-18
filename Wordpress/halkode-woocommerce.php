@@ -9,7 +9,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
 {
 
     protected $is_3d = 0;
-    protected $environment_url;
     public $headers = array(
         'Accept: application/json',
         'Content-Type: application/json'
@@ -36,8 +35,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
             $this->init_form_fields();
             // load time variable setting
             $this->init_settings();
-
-            $this->environment_url = $this->get_option('environment') == "yes" ? 'https://testapp.halkode.com.tr/ccpayment' : 'https://app.halkode.com.tr/ccpayment';
 
             // Turn these settings into variables we can use
             foreach ($this->settings as $setting_key => $value) {
@@ -70,7 +67,8 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
     public function get_endpoint_url($endpoint)
     {
-        return $this->environment_url . '/' . ltrim($endpoint, '/');
+        $url = $this->get_option('environment') == "yes" ? 'https://testapp.halkode.com.tr/ccpayment' : 'https://app.halkode.com.tr/ccpayment';
+        return $url . '/' . ltrim($endpoint, '/');
     }
 
     // administration fields for specific Gateway
