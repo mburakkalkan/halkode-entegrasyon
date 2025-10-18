@@ -50,9 +50,9 @@ add_action('plugins_loaded', 'halkode_pos', 0);
 add_action('init', 'my_custom_public_page');
 add_action('wp_ajax_get_installment', 'get_installment');
 add_action('wp_ajax_get_admin_installment', 'get_admin_installment');
-
 add_action('wp_ajax_nopriv_get_installment', 'get_installment');
 add_action('wp_ajax_nopriv_get_admin_installment', 'get_admin_installment');
+
 function halkode_pos()
 {
     try {
@@ -522,7 +522,6 @@ function get_installment()
                 $currency_code = '';
                 $i = 0;
                 $html = "<div class='installments-wrapper'>";
-                $installments_count = count($get_pos_response['data']);
 
                 foreach ($get_pos_response['data'] as $val) {
 
@@ -532,72 +531,44 @@ function get_installment()
                     }
 
                     $active_cls = "";
-
-                    //                      $inst= ($i+1)." Installment";
-
                     $currency_code = $val['currency_code'];
 
                     if ($i == 0) {
                         $active_cls = 'active';
-
                         $pos_id = $val['pos_id'];
-
                         $pos_amt = $val['amount_to_be_paid'];
-
                         $currency_id = $val['currency_id'];
-
                         $campaign_id = $val['campaign_id'];
-
                         $allocation_id = $val['allocation_id'];
-
                         $installments_number = $val['installments_number'];
                         $hash_key = $val['hash_key'];
-
                         $inst = $halkode_pay->getLocalizationContent('single_installment', $currency_code);
                     } else {
                         $inst = $i + 1 . " " . $halkode_pay->getLocalizationContent('installment', $currency_code);
                     }
 
-                    $html .=
-                        "<div class='single-installment " .
-                        $active_cls .
-                        "' data-posid='" .
-                        $val["pos_id"] .
-                        "' data-amount='" .
-                        $val["amount_to_be_paid"] .
-                        "' data-currency_id='" .
-                        $val["currency_id"] .
-                        "' data-campaign_id='" .
-                        $val["campaign_id"] .
-                        "' data-allocation_id='" .
-                        $val["allocation_id"] .
-                        "' data-installments_number='" .
-                        $val["installments_number"] .
-                        "' data-hash_key='" .
-                        $val["hash_key"] .
-                        "' data-currency_code='" .
-                        $val["currency_code"] .
-                        "'>
+                    $single_amount = isset($val['amount_to_be_paid']) ? $val['amount_to_be_paid'] : '';
+                    $single_currency = isset($val['currency_code']) ? $val['currency_code'] : '';
+                    $single_posid = isset($val['pos_id']) ? $val['pos_id'] : '';
+                    $single_currency_id = isset($val['currency_id']) ? $val['currency_id'] : '';
+                    $single_campaign_id = isset($val['campaign_id']) ? $val['campaign_id'] : '';
+                    $single_allocation_id = isset($val['allocation_id']) ? $val['allocation_id'] : '';
+                    $single_installments_number = isset($val['installments_number']) ? $val['installments_number'] : '';
+                    $single_hash_key = isset($val['hash_key']) ? $val['hash_key'] : '';
+                    $per_installment = '';
+                    $installment_index = $i + 1;
+                    if ($single_amount !== '' && is_numeric($single_amount) && $installment_index > 0) {
+                        $per_installment = number_format($single_amount / $installment_index, 2);
+                    }
 
-                        <div class='halkode_heading'>" .
-                        $inst .
-                        "</div>
-
-                        <div class='halkode_amount'>" .
-                        $val['amount_to_be_paid'] .
-                        " " .
-                        $val['currency_code'] .
-                        "</div>
-
-                        <div class='halkode_installment_number'>" .
-                        ($i + 1) .
-                        " X</div>
-
-                        <div class='halkode_total_amount'>" .
-                        number_format($val['amount_to_be_paid'] / ($i + 1), 2) .
-                        " " .
-                        $val['currency_code'] .
-                        "</div></div>";
+                    $html .= <<<HTML
+                            <div class="single-installment {$active_cls}" data-posid="{$single_posid}" data-amount="{$single_amount}" data-currency_id="{$single_currency_id}" data-campaign_id="{$single_campaign_id}" data-allocation_id="{$single_allocation_id}" data-installments_number="{$single_installments_number}" data-hash_key="{$single_hash_key}" data-currency_code="{$single_currency}">
+                                <div class="halkode_heading">{$inst}</div>
+                                <div class="halkode_amount">{$single_amount} {$single_currency}</div>
+                                <div class="halkode_installment_number">{$installment_index} X</div>
+                                <div class="halkode_total_amount">{$per_installment} {$single_currency}</div>
+                            </div>
+                        HTML;
 
                     $i++;
                 }
