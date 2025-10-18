@@ -842,32 +842,12 @@ class halkode_sanalpos extends WC_Payment_Gateway
         $salt = substr(sha1(mt_rand()), 0, 4);
         $saltWithPassword = hash('sha256', $password . $salt);
 
-        $encrypted = openssl_encrypt("$data", 'aes-256-cbc', "$saltWithPassword", null, $iv);
+        $encrypted = openssl_encrypt("$data", 'aes-256-cbc', "$saltWithPassword", 0, $iv);
 
         $msg_encrypted_bundle = "$iv:$salt:$encrypted";
         $msg_encrypted_bundle = str_replace('/', '__', $msg_encrypted_bundle);
 
         return $msg_encrypted_bundle;
-    }
-
-    private function getToken()
-    {
-
-        $api_secret = $this->get_option('app_secret');
-        $api_key = $this->get_option('app_key');
-        $merchant_key = $this->get_option('merchant_key');
-        $merchant_id = $this->get_option('merchant_id');
-        $sandbox = $this->get_option('environment');
-
-
-        $url = $sandbox == 'yes' ? 'https://testapp.halkode.com.tr/ccpayment/api/token' : 'https://app.halkode.com.tr/ccpayment/api/token';
-
-        $array = [
-            'app_id' => $api_key,
-            'app_secret' => $api_secret
-        ];
-
-        return $this->curl($url, 'POST', $array);
     }
 
     // Validate fields
