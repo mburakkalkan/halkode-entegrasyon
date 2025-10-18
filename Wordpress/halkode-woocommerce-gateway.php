@@ -43,64 +43,11 @@ register_activation_hook(__FILE__, 'halkode_plugin_activate');
 
 function halkode_plugin_activate()
 {
-    try {
-        // Veritabanı tablosunu oluştur
-        global $wpdb;
-
-        if (!$wpdb) {
-            throw new Exception('WordPress veritabanı bağlantısı kurulamadı');
-        }
-
-        halkode_log('Plugin aktivasyonu başlıyor...', 'info');
-
-        $table_name = $wpdb->prefix . 'halkode_cards';
-        $charset_collate = $wpdb->get_charset_collate();
-
-        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
-                card_id int(11) NOT NULL AUTO_INCREMENT,
-                customer_id INT(11) NOT NULL,
-                card_token varchar(255) NOT NULL,
-                card_mask varchar(255) NOT NULL,
-                created_at timestamp DEFAULT current_timestamp,
-                PRIMARY KEY (card_id),
-                INDEX idx_customer_id (customer_id),
-                INDEX idx_card_token (card_token)
-            ) $charset_collate;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-        $result = dbDelta($sql);
-
-        if ($result) {
-            halkode_log('Plugin aktivasyonu tamamlandı', 'info', array('result' => $result));
-        } else {
-            halkode_log('Tablo oluşturuldu ancak değişiklik yapılmadı (tablo zaten var olabilir)', 'info');
-        }
-
-        // Veritabanı hatası kontrolü
-        if ($wpdb->last_error) {
-            throw new Exception('Veritabanı hatası: ' . $wpdb->last_error);
-        }
-    } catch (Exception $e) {
-        halkode_log('Plugin aktivasyon hatası: ' . $e->getMessage(), 'error', array(
-            'trace' => $e->getTraceAsString()
-        ));
-
-        // Kullanıcıya hata mesajı göster
-        wp_die(
-            '<h1>HalkOde Eklenti Aktivasyon Hatası</h1>' .
-                '<p><strong>Hata:</strong> ' . esc_html($e->getMessage()) . '</p>' .
-                '<p>Lütfen sistem yöneticinizle iletişime geçin.</p>' .
-                '<p><a href="' . admin_url('plugins.php') . '">Eklentilere Geri Dön</a></p>',
-            'HalkOde Aktivasyon Hatası',
-            array('back_link' => true)
-        );
-    }
+    // Kart kaydetme ile ilgili kodlar kaldırıldı. Artık aktivasyonda ek işlem yapılmıyor.
 }
 
 add_action('plugins_loaded', 'halkode_pos', 0);
 add_action('init', 'my_custom_public_page');
-add_action('wp_ajax_delete_halkode_card', 'delete_halkode_card');
 add_action('wp_ajax_get_installment', 'get_installment');
 add_action('wp_ajax_get_admin_installment', 'get_admin_installment');
 
@@ -150,68 +97,6 @@ function halkode_pos()
         });
     }
 }
-
-
-function delete_halkode_card()
-{
-    try {
-        // Güvenlik kontrolü
-        if (!is_user_logged_in()) {
-            wp_die('Unauthorized');
-        }
-
-        // Nonce kontrolü
-        if (!wp_verify_nonce($_POST['nonce'], 'delete_halkode_card')) {
-            wp_die('Security check failed');
-        }
-
-        global $wpdb;
-
-        if (empty($_POST['card'])) {
-            halkode_log('Kart token boş', 'error');
-            wp_die('Invalid card token');
-        }
-
-        $card_token = sanitize_text_field($_POST['card']);
-        $current_user_id = get_current_user_id();
-
-        // Kart sahibi kontrolü
-        $table = $wpdb->prefix . 'halkode_cards';
-        $card = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$table} WHERE card_token = %s AND customer_id = %d",
-            $card_token,
-            $current_user_id
-        ));
-
-        if (!$card) {
-            halkode_log('Kullanıcının kartı bulunamadı', 'error', array(
-                'user_id' => $current_user_id,
-                'card_token' => substr($card_token, 0, 10) . '...'
-            ));
-            wp_die('Card not found');
-        }
-
-        $result = $wpdb->delete($table, array(
-            'card_token' => $card_token,
-            'customer_id' => $current_user_id
-        ));
-
-        if ($result === false) {
-            halkode_log('Kart silme hatası: ' . $wpdb->last_error, 'error');
-            wp_die('Database error');
-        }
-
-        halkode_log('Kart başarıyla silindi', 'info', array(
-            'user_id' => $current_user_id,
-            'card_token' => substr($card_token, 0, 10) . '...'
-        ));
-        wp_die('success');
-    } catch (Exception $e) {
-        halkode_log('delete_halkode_card hatası: ' . $e->getMessage(), 'error');
-        wp_die('Internal error');
-    }
-}
-
 
 // Add custom action links
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'halkode_settings');
@@ -289,7 +174,7 @@ function my_custom_public_page()
     try {
         // If action parameter exists and it does not belong to this plugin, exit the function
         if (isset($_GET['action'])) {
-            $halkode_actions = array('delete_halkode_card', 'get_installment', 'get_admin_installment');
+            $halkode_actions = array('get_installment', 'get_admin_installment');
             if (!in_array($_GET['action'], $halkode_actions)) {
                 return;
             }

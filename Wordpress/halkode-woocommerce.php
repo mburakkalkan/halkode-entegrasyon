@@ -169,21 +169,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
                 'installment' => 'Taksit',
 
-                'new_card' => 'Yeni Kart',
-
-                'saved_card' => 'Kayıtlı Kart',
-
-                'save_card' => 'Bu Kartı Kaydet',
-
                 '3D_payment' => '3D Ödeme',
-
-                'your_registered_cards' => 'Kayıtlı Kartlarınız',
-
-                'choose_card' => 'Kart Seçiniz',
-
-                'no_registered_card' => 'Kayıtlı Kartınız Yok',
-
-                'delete_saved_card' => 'Sil',
             ],
 
             'USD' => [
@@ -199,21 +185,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
                 'installment' => 'Installment',
 
-                'new_card' => 'New Card',
-
-                'saved_card' => 'Saved Card',
-
-                'save_card' => 'Save Card',
-
                 '3D_payment' => '3D Payment',
-
-                'your_registered_cards' => 'Your Registered Cards',
-
-                'choose_card' => 'Choose Card',
-
-                'no_registered_card' => 'You Dont Have a Registered Card',
-
-                'delete_saved_card' => 'Delete',
             ],
 
             'EUR' => [
@@ -229,21 +201,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
                 'installment' => 'Installment',
 
-                'new_card' => 'New Card',
-
-                'saved_card' => 'Saved Card',
-
-                'save_card' => 'Save Card',
-
                 '3D_payment' => '3D Payment',
-
-                'your_registered_cards' => 'Your Registered Cards',
-
-                'choose_card' => 'Choose Card',
-
-                'no_registered_card' => 'You Dont Have a Registered Card',
-
-                'delete_saved_card' => 'Delete',
             ],
         ];
 
@@ -363,7 +321,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
             do_action('woocommerce_credit_card_form_start', $this->id);
             // I recommend to use inique IDs, because other gateways could already use #ccNo, #expdate, #cvc
             ?>
-            <input type="hidden" name="stored_card" value="0">
             <div class="payment-form">
                 <div class="form-row form-row-wide">
 
@@ -396,23 +353,14 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
                 </div>
 
-
                 <input type="hidden" name="pos_id" class="pos_id" value="" />
-
                 <input type="hidden" name="pos_amount" class="pos_amount" value="" />
-
                 <input type="hidden" name="currency_id" class="currency_id" value="" />
-
                 <input type="hidden" name="campaign_id" class="campaign_id" value="" />
-
                 <input type="hidden" name="currency_code" class="currency_code" value="" />
-
                 <input type="hidden" name="allocation_id" class="allocation_id" value="" />
-
                 <input type="hidden" name="installments_number" class="installments_number" value="" />
-
                 <input type="hidden" name="hash_key" class="hash_key" value="" />
-
                 <div class="clear"></div>
 
                 <?php
@@ -428,69 +376,8 @@ class halkode_sanalpos extends WC_Payment_Gateway
                 <p class="installments form-row form-row-wide" id="installments" <?php echo $dis; ?>></p>
                 <div class="clear"></div>
 
-                <?php
-                /*
-						<p class="form-row form-row-wide" style="margin-top:10px;">
-							<?php if (is_user_logged_in()): ?>
-							<input style="width:auto;" id="save_card" class="save_card" name="save_card" type="checkbox"
-								   autocomplete="off"
-								   value="yes"><strong><?php echo $this->getLocalizationContent('save_card', $currency); ?></strong>
-
-						</p>
-
-                        <?php endif; ?>
-					*/
-                ?>
-
             </div>
             <div class="clear"></div>
-            <?php if (is_user_logged_in()): ?>
-
-
-                <div class="saved_card" style="display:none">
-                    <div class="form-group">
-                        <label class="col-sm-2 control-label"
-                            for="input-card-choice"><?php echo $this->getLocalizationContent('your_registered_cards', $currency); ?></label>
-                        <div class="col-sm-8">
-                            <?php global $wpdb;
-                            try {
-                                global $wpdb;
-
-
-                                $table_name = $wpdb->prefix . 'halkode_cards';
-                                $cards = $wpdb->get_results("SELECT * FROM $table_name where customer_id=" . get_current_user_id());
-                            } catch (\Exception $e) {
-                                halkode_log('Kayıtlı kartlar listelenemedi: ' . $e->getMessage(), 'error');
-                            }
-                            ?>
-                            <select name="card_choice" style="width:100%" id="input-card-choice"
-                                class="input-text" <?php if (count($cards) == 0): ?> disabled <?php endif; ?>>
-
-
-                                <?php if (count($cards) > 0): ?>
-
-                                    <option value=""><?php echo $this->getLocalizationContent('choose_card', $currency); ?></option>
-                                    <?php foreach ($cards as $card): ?>
-                                        <option value="<?php echo $card->card_token; ?>"><?php echo $card->card_mask; ?></option>
-                                    <?php endforeach; ?>
-
-                                <?php else: ?>
-                                    <option value=""><?php echo $this->getLocalizationContent('no_registered_card', $currency); ?></option>
-                                <?php endif; ?>
-
-
-                            </select>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="button"
-                                value="<?php echo $this->getLocalizationContent('delete_saved_card', $currency); ?>"
-                                id="button-delete"
-                                data-loading-text="<?php echo $this->getLocalizationContent('delete_saved_card', $currency); ?>"
-                                class="action danger checkout" />
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <?php if ($this->is_3d == 1) { ?>
 
@@ -678,16 +565,13 @@ class halkode_sanalpos extends WC_Payment_Gateway
         // checking for transaction
         $environment = $this->environment == "yes" ? 'TRUE' : 'FALSE';
         // Decide which URL to post to
-        if (isset($_POST['stored_card']) && $_POST['stored_card'] == 1) {
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/payByCardToken' : 'https://testapp.halkode.com.tr/ccpayment/api/payByCardToken';
+
+        if (isset($_POST['pay_via_3d']) && $_POST['pay_via_3d'] == 'yes') {
+            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
+        } elseif (isset($_POST['halkode_3d']) && $_POST['halkode_3d'] == 2) {
+            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
         } else {
-            if (isset($_POST['pay_via_3d']) && $_POST['pay_via_3d'] == 'yes') {
-                $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
-            } elseif (isset($_POST['halkode_3d']) && $_POST['halkode_3d'] == 2) {
-                $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
-            } else {
-                $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart2D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart2D';
-            }
+            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart2D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart2D';
         }
 
 
@@ -767,74 +651,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
         $order = md5(microtime()) . 'WOO' . $order_id;
 
-        if (isset($_POST['save_card']) && $_POST['save_card'] == 'yes') {
-
-            global $wpdb;
-
-            $getToken = $this->getToken();
-            $customer_number = get_current_user_id();
-            $api_secret = $this->get_option('app_secret');
-            $api_key = $this->get_option('app_key');
-            $merchant_key = $this->get_option('merchant_key');
-            $merchant_id = $this->get_option('merchant_id');
-            $sandbox = $this->get_option('environment');
-            $hash = $this->generateSaveCardCreateHashKey(
-                $merchant_key,
-                $customer_number,
-                $_POST['cc_number'],
-                $_POST['cc_holder_name'],
-                $_POST['expiry_month'],
-                $_POST['expiry_year'],
-                $api_secret
-            );
-
-
-            $url = $sandbox == 'yes' ? 'https://testapp.halkode.com.tr/ccpayment/api/saveCard' : 'https://app.halkode.com.tr/ccpayment/api/saveCard';
-
-
-            $array = [
-                'merchant_key' => $merchant_key,
-                'card_holder_name' => $_POST['cc_holder_name'],
-                'card_number' => $_POST['cc_number'],
-                'expiry_month' => $_POST['expiry_month'],
-                'expiry_year' => $_POST['expiry_year'],
-                'customer_number' => (string)$customer_number,
-                'hash_key' => $hash,
-
-            ];
-
-
-            $header[] = 'Content-type: application/json';
-            $header[] = 'Authorization: Bearer ' . $getToken->data->token;
-
-
-            $save_card = $this->curl($url, 'POST', json_encode($array), $header);
-            $customer = $customer_number;
-
-            $customer = (int)$customer;
-            $cc_number = str_replace(' ', '', $_POST['cc_number']);
-            $first_six = substr($cc_number, 0, 6);
-
-            $last_for = substr($cc_number, 12, 4);
-
-            $cc = $first_six . "******" . $last_for;
-
-
-            if ($save_card->status_code == "100") {
-
-                $array = [
-                    'customer_id' => $customer,
-                    'card_token' => $save_card->card_token,
-                    'card_mask' => $cc
-                ];
-                try {
-                    $wpdb->insert($wpdb->prefix . 'halkode_cards', $array);
-                } catch (\Exception $e) {
-                    halkode_log('Kart kaydetme hatası: ' . $e->getMessage(), 'error');
-                }
-            }
-        }
-
         $installment = $_POST['installments_number'] >= 1 ? $_POST['installments_number'] : 1;
 
         $pay_data = [
@@ -849,7 +665,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
             'installments_number' => $installment,
             'invoice_id' => $order,
             'is_3d' => isset($_POST['pay_via_3d']) ? 'yes' : 'no',
-            'is_2d_card' => $_POST['stored_card'] == 1 ? 'yes' : 'no',
+            'is_2d_card' => 'no',
             'token' => $_POST['halkode_token'],
             'invoice_description' => $order_id . " ödemesi",
             'transaction_type' => $this->get_option('transaction_type'),
@@ -873,21 +689,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
         ];
 
-        if (isset($_POST['stored_card']) && $_POST['stored_card'] == 1) {
-            $pay_data['customer_number'] = get_current_user_id();
-            $pay_data['customer_email'] = $_POST['billing_email'];
-            $pay_data['customer_phone'] = '123456789';
-            $pay_data['customer_name'] = $_POST['billing_first_name'] . ' ' . $_POST['billing_last_name'];
-            $pay_data['card_token'] = $_POST['card_choice'];
-            unset($pay_data['cc_holder_name']);
-            unset($pay_data['cc_no']);
-            unset($pay_data['card_owner']);
-            unset($pay_data['expiry_month']);
-            unset($pay_data['expiry_year']);
-            unset($pay_data['cvv']);
-            unset($pay_data['card_save']);
-        }
-
         if (isset($_POST['halkode_3d']) && ($_POST['halkode_3d'] == 4 || $_POST['halkode_3d'] == 8)) {
             $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/purchase/link' : 'https://testapp.halkode.com.tr/ccpayment/purchase/link';
             unset($pay_data['cc_holder_name']);
@@ -896,7 +697,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
             unset($pay_data['expiry_month']);
             unset($pay_data['expiry_year']);
             unset($pay_data['cvv']);
-            unset($pay_data['card_save']);
         }
 
         if (isset($_POST['pay_via_3d'])) {
@@ -1050,27 +850,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
         return $msg_encrypted_bundle;
     }
 
-    public function generateSaveCardCreateHashKey(
-        $merchant_key,
-        $customer_number,
-        $card_number,
-        $card_holder_name,
-        $expiry_month,
-        $expiry_year,
-        $app_secret
-    ) {
-        $data = $merchant_key . '|' . $customer_number . '|' . $card_holder_name . '|' . $card_number . '|' . $expiry_month . '|' . $expiry_year;
-        $iv = substr(sha1(mt_rand()), 0, 16);
-        $password = sha1($app_secret);
-        $salt = substr(sha1(mt_rand()), 0, 4);
-        $saltWithPassword = hash('sha256', $password . $salt);
-        $encrypted = openssl_encrypt("$data", 'aes-256-cbc', "$saltWithPassword", null, $iv);
-        $msg_encrypted_bundle = "$iv:$salt:$encrypted";
-        $msg_encrypted_bundle = str_replace('/', '__', $msg_encrypted_bundle);
-
-        return $msg_encrypted_bundle;
-    }
-
     private function getToken()
     {
 
@@ -1098,74 +877,64 @@ class halkode_sanalpos extends WC_Payment_Gateway
         if (!isset($_POST['payment_method']) || $_POST['payment_method'] !== 'halkode_sanalpos') {
             return true;
         }
+        if (isset($_POST['cc_holder_name']) && empty($_POST['cc_holder_name'])) {
+            wc_add_notice('Kart sahibi alanı zorunludur!', 'error');
 
-        if (isset($_POST['stored_card']) && $_POST['stored_card'] == 1) {
-            if (isset($_POST['card_choice']) && empty($_POST['card_choice'])) {
-                wc_add_notice('Kayıtlı kart seçmek zorunludur!', 'error');
-
-                return false;
-            }
+            return false;
         }
-        if (isset($_POST['stored_card']) && $_POST['stored_card'] != 1) {
-            if (isset($_POST['cc_holder_name']) && empty($_POST['cc_holder_name'])) {
-                wc_add_notice('Kart sahibi alanı zorunludur!', 'error');
 
-                return false;
-            }
+        if (isset($_POST['cc_number']) && empty($_POST['cc_number'])) {
+            wc_add_notice('Kart numarası alanı zorunludur!', 'error');
 
-            if (isset($_POST['cc_number']) && empty($_POST['cc_number'])) {
-                wc_add_notice('Kart numarası alanı zorunludur!', 'error');
+            return false;
+        }
 
-                return false;
-            }
+        if (!preg_match("/^[0-9]{13,16}$/", str_replace(array(' ', '-'), '', $_POST['cc_number']))) {
+            wc_add_notice('Geçersiz kart numarası!', 'error');
 
-            if (!preg_match("/^[0-9]{13,16}$/", str_replace(array(' ', '-'), '', $_POST['cc_number']))) {
-                wc_add_notice('Geçersiz kart numarası!', 'error');
+            return false;
+        }
 
-                return false;
-            }
+        if (isset($_POST['expiry_month']) && empty($_POST['expiry_month'])) {
+            wc_add_notice('Kart son kullanım ayı zorunludur!', 'error');
 
-            if (isset($_POST['expiry_month']) && empty($_POST['expiry_month'])) {
-                wc_add_notice('Kart son kullanım ayı zorunludur!', 'error');
+            return false;
+        }
 
-                return false;
-            }
+        $month = isset($_POST['expiry_month']) ? intval($_POST['expiry_month']) : 0;
+        if ($month < 1 || $month > 12) {
+            wc_add_notice(__('Kart son kullanım ayı 1 ile 12 arasında olmalıdır.', 'woocommerce'), 'error');
+        }
 
-            $month = isset($_POST['expiry_month']) ? intval($_POST['expiry_month']) : 0;
-            if ($month < 1 || $month > 12) {
-                wc_add_notice(__('Kart son kullanım ayı 1 ile 12 arasında olmalıdır.', 'woocommerce'), 'error');
-            }
+        if (isset($_POST['expiry_year']) && empty($_POST['expiry_year'])) {
+            wc_add_notice('Kart son kullanım yılı zorunludur!', 'error');
 
-            if (isset($_POST['expiry_year']) && empty($_POST['expiry_year'])) {
-                wc_add_notice('Kart son kullanım yılı zorunludur!', 'error');
+            return false;
+        }
 
-                return false;
-            }
+        $year = isset($_POST['expiry_year']) ? intval($_POST['expiry_year']) : 0;
+        $currentYear = intval(date("Y"));
+        if ($year < $currentYear || $year > $currentYear + 20) {
+            wc_add_notice(__('Lütfen geçerli bir son kullanma yılı girin.', 'woocommerce'), 'error');
 
-            $year = isset($_POST['expiry_year']) ? intval($_POST['expiry_year']) : 0;
-            $currentYear = intval(date("Y"));
-            if ($year < $currentYear || $year > $currentYear + 20) {
-                wc_add_notice(__('Lütfen geçerli bir son kullanma yılı girin.', 'woocommerce'), 'error');
+            return false;
+        }
 
-                return false;
-            }
+        // Expiry geçmiş mi kontrol et
+        if ($year == $currentYear && $month < intval(date("n"))) {
+            wc_add_notice(__('Son kullanma tarihi geçmiş tarih olamaz!', 'woocommerce'), 'error');
 
-            // Expiry geçmiş mi kontrol et
-            if ($year == $currentYear && $month < intval(date("n"))) {
-                wc_add_notice(__('Son kullanma tarihi geçmiş tarih olamaz!', 'woocommerce'), 'error');
+            return false;
+        }
+        if (isset($_POST['cc_cvv']) && empty($_POST['cc_cvv'])) {
+            wc_add_notice('Kart CVV zorunludur!', 'error');
 
-                return false;
-            }
-            if (isset($_POST['cc_cvv']) && empty($_POST['cc_cvv'])) {
-                wc_add_notice('Kart CVV zorunludur!', 'error');
+            return false;
+        }
+        if (!preg_match("/^[0-9]{3,4}$/", $_POST['cc_cvv'])) {
+            wc_add_notice('Geçersiz CVV kodu!', 'error');
 
-                return false;
-            }
-            if (!preg_match("/^[0-9]{3,4}$/", $_POST['cc_cvv'])) {
-                wc_add_notice('Geçersiz CVV kodu!', 'error');
-
-                return false;
-            }
+            return false;
         }
     }
 
