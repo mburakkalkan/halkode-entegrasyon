@@ -65,22 +65,6 @@ jQuery(document).ready(function () {
     }
   );
 
-  /* jQuery('form.checkout').on('click', 'button.halkode_place_order', function(e){
-
-       if(jQuery('#halkode_3d').val() == 1){
-
-            e.preventDefault();
-
-            alert('hey');
-
-            jQuery('body').append('<div class="halkode_3d_popup"><form action="http://wpdemo.learnetech.com/cart" method="post" class="halkode_3d_form"><input type="text" name="fname" value="Test"></form></div>');
-
-            jQuery('.halkode_3d_form').submit();
-
-       }
-
-   });*/
-
   jQuery(document).on("click", "#recurring_checkbox", function () {
     if (jQuery(this).is(":checked")) jQuery(".recurring_option_fields").show();
     else jQuery(".recurring_option_fields").hide();
@@ -90,7 +74,6 @@ jQuery(document).ready(function () {
 function ajaxRequest(url, formData, token) {
   var spinner =
     '<img src="' + halkode_var.spinner + '" class="halkode_spinner"/>';
-  //jQuery(spinner).insertAfter(jQuery('#cc_number'));
   jQuery(".halkode_spinner_blk").html(spinner);
   jQuery.ajax({
     url: url + "?action=get_installment",
