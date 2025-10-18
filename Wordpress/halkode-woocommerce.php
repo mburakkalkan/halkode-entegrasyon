@@ -9,6 +9,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
 {
 
     protected $is_3d = 0;
+    protected $environment_url;
     public $headers = array(
         'Accept: application/json',
         'Content-Type: application/json'
