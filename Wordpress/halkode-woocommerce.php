@@ -36,6 +36,8 @@ class halkode_sanalpos extends WC_Payment_Gateway
             // load time variable setting
             $this->init_settings();
 
+            $this->environment_url = $this->get_option('environment') == "yes" ? 'https://testapp.halkode.com.tr/ccpayment' : 'https://app.halkode.com.tr/ccpayment';
+
             // Turn these settings into variables we can use
             foreach ($this->settings as $setting_key => $value) {
                 $this->$setting_key = $value;
@@ -64,6 +66,11 @@ class halkode_sanalpos extends WC_Payment_Gateway
             });
         }
     } // Here is the  End __construct()
+
+    public function get_endpoint_url($endpoint)
+    {
+        return $this->environment_url . '/' . ltrim($endpoint, '/');
+    }
 
     // administration fields for specific Gateway
 
@@ -158,49 +165,31 @@ class halkode_sanalpos extends WC_Payment_Gateway
         $lang = [
             get_option('woocommerce_currency') => [
                 'card_holder_name' => 'Kart Sahibi',
-
                 'card_number' => 'Kart Numarası',
-
                 'expiry' => 'Son Kullanma Tarihi',
-
                 'cvv' => 'Güvenlik Numarası',
-
                 'single_installment' => 'Peşin',
-
                 'installment' => 'Taksit',
-
                 '3D_payment' => '3D Ödeme',
             ],
 
             'USD' => [
                 'card_holder_name' => 'Card Holder Name',
-
                 'card_number' => 'Card Number',
-
                 'expiry' => 'Expiry',
-
                 'cvv' => 'CVV',
-
                 'single_installment' => 'Single Installment',
-
                 'installment' => 'Installment',
-
                 '3D_payment' => '3D Payment',
             ],
 
             'EUR' => [
                 'card_holder_name' => 'Card Holder Name',
-
                 'card_number' => 'Card Number',
-
                 'expiry' => 'Expiry',
-
                 'cvv' => 'CVV',
-
                 'single_installment' => 'Single Installment',
-
                 'installment' => 'Installment',
-
                 '3D_payment' => '3D Payment',
             ],
         ];
@@ -241,10 +230,7 @@ class halkode_sanalpos extends WC_Payment_Gateway
                 'app_secret' => $this->get_option('app_secret'),
             ];
 
-            $environment = $this->environment == "yes" ? 'TRUE' : 'FALSE';
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/token' : 'https://testapp.halkode.com.tr/ccpayment/api/token';
-
-            $result = $this->curl($environment_url, 'POST', $post);
+            $result = $this->curl($this->get_endpoint_url("/api/token"), 'POST', $post);
 
             if (is_wp_error($result)) {
                 halkode_log('Token alma hatası: ' . $result->get_error_message(), 'error');
@@ -561,20 +547,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
         global $wp_session;
         $order = new WC_Order($order_id);
 
-
-        // checking for transaction
-        $environment = $this->environment == "yes" ? 'TRUE' : 'FALSE';
-        // Decide which URL to post to
-
-        if (isset($_POST['pay_via_3d']) && $_POST['pay_via_3d'] == 'yes') {
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
-        } elseif (isset($_POST['halkode_3d']) && $_POST['halkode_3d'] == 2) {
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart3D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart3D';
-        } else {
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart2D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart2D';
-        }
-
-
         // This is where the fun stuff begins
         $price = 0;
         /* Login for deduct discount amount */
@@ -593,15 +565,10 @@ class halkode_sanalpos extends WC_Payment_Gateway
         }
 
         foreach ($order_items as $item_id => $order_item) {
-
-
             $invoice['items'][] = [
                 'name' => $order_item->get_name(),
-
                 'price' => number_format($order_item->get_total(), 2, ".", "") / $order_item->get_quantity(),
-
                 'qty' => $order_item->get_quantity(),
-
                 'description' => '',
             ];
 
@@ -611,11 +578,8 @@ class halkode_sanalpos extends WC_Payment_Gateway
         if ($order->get_total_tax() > 0) {
             $invoice['items'][] = [
                 'name' => 'Tax',
-
                 'price' => number_format($order->get_total_tax(), 2, ".", ""),
-
                 'qty' => 1,
-
                 'description' => '',
             ];
 
@@ -625,36 +589,20 @@ class halkode_sanalpos extends WC_Payment_Gateway
         $invoice['total'] = number_format($price, 2, ".", "");
 
         //BIlling info Optional
-
         $invoice['bill_address1'] = isset($_POST['billing_address_1']) ? $_POST['billing_address_1'] : '';
-
         $invoice['bill_address2'] = isset($_POST['billing_address_2']) ? $_POST['billing_address_2'] : '';
-
         $invoice['bill_city'] = isset($_POST['billing_city']) ? $_POST['billing_city'] : '';
-
         $invoice['bill_postcode'] = isset($_POST['billing_postcode']) ? $_POST['billing_postcode'] : '';
-
         $invoice['bill_state'] = isset($_POST['billing_state']) ? $_POST['billing_state'] : '';
-
         $invoice['bill_country'] = isset($_POST['billing_country']) ? $_POST['billing_country'] : '';
-
         $invoice['bill_email'] = isset($_POST['billing_email']) ? $_POST['billing_email'] : '';
-
         $invoice['bill_phone'] = isset($_POST['billing_phone']) ? $_POST['billing_phone'] : '';
 
-
         $return_url = $order->get_checkout_order_received_url();
-
-        $date = explode(' / ', $_POST['halkode_sanalpos-card-expiry']);
-        $month = $date[0];
-        $year = strlen($date[1]) == 2 ? 20 . $date[1] : $date[1];
-
         $order = md5(microtime()) . 'WOO' . $order_id;
-
         $installment = $_POST['installments_number'] >= 1 ? $_POST['installments_number'] : 1;
 
         $pay_data = [
-
             'cc_holder_name' => $_POST['cc_holder_name'],
             'cc_no' => str_replace(array(' ', '-'), '', $_POST['cc_number']),
             'cvv' => $_POST['cc_cvv'],
@@ -685,12 +633,19 @@ class halkode_sanalpos extends WC_Payment_Gateway
             'hash_key' => $this->generateHashKey(number_format(WC()->cart->total, 2, ".", ""), $installment, get_option('woocommerce_currency'), $this->get_option('merchant_key'), $order, $this->get_option('app_secret')),
             'return_url' => $return_url,
             'cancel_url' => wc_get_checkout_url(),
-
-
         ];
 
+        // Decide which URL to post to
+        if (isset($_POST['pay_via_3d']) && $_POST['pay_via_3d'] == 'yes') {
+            $form_action_url = $this->get_endpoint_url('/api/paySmart3D');
+        } elseif (isset($_POST['halkode_3d']) && $_POST['halkode_3d'] == 2) {
+            $form_action_url = $this->get_endpoint_url('/api/paySmart3D');
+        } else {
+            $form_action_url = $this->get_endpoint_url('/api/paySmart2D');
+        }
+
         if (isset($_POST['halkode_3d']) && ($_POST['halkode_3d'] == 4 || $_POST['halkode_3d'] == 8)) {
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/purchase/link' : 'https://testapp.halkode.com.tr/ccpayment/purchase/link';
+            $form_action_url = $this->get_endpoint_url('/purchase/link');
             unset($pay_data['cc_holder_name']);
             unset($pay_data['cc_no']);
             unset($pay_data['card_owner']);
@@ -701,11 +656,12 @@ class halkode_sanalpos extends WC_Payment_Gateway
 
         if (isset($_POST['pay_via_3d'])) {
         } elseif (isset($_POST['halkode_3d']) && ($_POST['halkode_3d'] == 2)) {
+            // 3D işlemi için özel bir işlem yapılmıyor, ileride eklenebilir
         } else {
+            // 2D işlemler için items dizisi JSON'suz gönderiliyor
             unset($pay_data['items']);
             $pay_data['items'] = $invoice['items'];
         }
-
 
         if ($is_recurring_cart == 'yes') {
             $pay_data['recurring_web_hook_key'] = $this->get_option('recurring_sale_webhook_key');
@@ -715,18 +671,12 @@ class halkode_sanalpos extends WC_Payment_Gateway
             $pay_data['recurring_payment_interval'] = get_post_meta($cart_product_id, 'payment_interval', true);
         }
 
-
-        $form = "<form id='halkode-form' action='" . $environment_url . "' method='POST'>";
-
+        $form = "<form id='halkode-form' action='" . $form_action_url . "' method='POST'>";
         foreach ($pay_data as $key => $item) {
-
             $form .= "<input type='hidden' name='{$key}' value='" . $item . "'>";
         }
+        $form .= '</form><script>document.getElementById("halkode-form").submit()</script>';
 
-
-        //$form .= '<form>';
-        $form .= '<form><script>document.getElementById("halkode-form").submit()</script>';
-        //
         if (isset($_POST['pay_via_3d'])) {
             update_post_meta($order_id, 'halkode_payment_form', base64_encode(serialize($form)));
         } elseif (isset($_POST['halkode_3d']) && ($_POST['halkode_3d'] == 2)) {
@@ -734,19 +684,14 @@ class halkode_sanalpos extends WC_Payment_Gateway
         } elseif (isset($_POST['halkode_3d']) && ($_POST['halkode_3d'] == 4 || $_POST['halkode_3d'] == 8)) {
             $pay_data['purchase'] = 'yes';
             unset($pay_data['is_2d_card']);
-
             update_post_meta($order_id, 'halkode_payment_form', base64_encode(serialize($pay_data)));
         } else {
-
             update_post_meta($order_id, 'halkode_payment_form', base64_encode(serialize($pay_data)));
         }
 
         return array(
-
             'result' => 'success',
-
             'redirect' => get_site_url() . '/?order_id=' . $order_id
-
         );
     }
 
@@ -763,9 +708,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
                 'app_secret' => $this->get_option('app_secret'),
             ];
 
-            $environment = $this->get_option('environment') == "yes" ? 'TRUE' : 'FALSE';
-            $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/token' : 'https://testapp.halkode.com.tr/ccpayment/api/token';
-
             // Gerekli alanların kontrolü
             if (empty($this->get_option('app_key')) || empty($this->get_option('app_secret')) || empty($this->get_option('merchant_key'))) {
                 halkode_log('Gerekli API bilgileri eksik', 'debug', array(
@@ -777,8 +719,9 @@ class halkode_sanalpos extends WC_Payment_Gateway
             }
 
             // 1. TOKEN AL
-            halkode_log('Token alma isteği gönderiliyor', 'debug', array('url' => $environment_url));
-            $tokenResponse = $this->curl($environment_url, 'POST', $post);
+            $token_url = $this->get_endpoint_url('/api/token');
+            halkode_log('Token alma isteği gönderiliyor', 'debug', array('url' => $token_url));
+            $tokenResponse = $this->curl($token_url, 'POST', $post);
 
             // Token kontrolü
             if (!$tokenResponse || !isset($tokenResponse->data) || !isset($tokenResponse->data->token)) {
@@ -789,11 +732,6 @@ class halkode_sanalpos extends WC_Payment_Gateway
             $token = $tokenResponse->data->token;
             halkode_log('Token başarıyla alındı', 'debug');
 
-            // 2. INSTALLMENT URL
-            $environment_url = ($environment === "FALSE")
-                ? 'https://app.halkode.com.tr/ccpayment/api/installments'
-                : 'https://testapp.halkode.com.tr/ccpayment/api/installments';
-
             $headers = [
                 'Accept: application/json',
                 'Content-Type: application/json',
@@ -803,8 +741,9 @@ class halkode_sanalpos extends WC_Payment_Gateway
             $installment_data = array('merchant_key' => $this->get_option('merchant_key'));
 
             // 3. TAKSİT AL
-            halkode_log('Taksit bilgileri alınıyor', 'debug', array('url' => $environment_url));
-            $installments = $this->curl($environment_url, 'POST', json_encode($installment_data), $headers);
+            $installments_url = $this->get_endpoint_url('/api/installments');
+            halkode_log('Taksit bilgileri alınıyor', 'debug', array('url' => $installments_url));
+            $installments = $this->curl($installments_url, 'POST', json_encode($installment_data), $headers);
 
             // Installments kontrolü
             if ($installments && isset($installments->installments) && is_array($installments->installments)) {

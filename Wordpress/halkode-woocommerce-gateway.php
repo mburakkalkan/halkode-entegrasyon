@@ -111,34 +111,23 @@ function getToken()
     $halkode_pay = new halkode_sanalpos();
     $api_secret = $halkode_pay->get_option('app_secret');
     $api_key = $halkode_pay->get_option('app_key');
-    $merchant_key = $halkode_pay->get_option('merchant_key');
-    $merchant_id = $halkode_pay->get_option('merchant_id');
-    $sandbox = $halkode_pay->get_option('environment');
-
-
-    $url = $sandbox == 'yes' ? 'https://testapp.halkode.com.tr/ccpayment/api/token' : 'https://app.halkode.com.tr/ccpayment/api/token';
 
     $array = [
         'app_id' => $api_key,
         'app_secret' => $api_secret
     ];
 
-    return getCurl($url, 'POST', $array);
+    return getCurl($halkode_pay->get_endpoint_url('/api/token'), 'POST', $array);
 }
 
 function checkStatus($invoice_id)
 {
     $halkode_pay = new halkode_sanalpos();
     $api_secret = $halkode_pay->get_option('app_secret');
-    $api_key = $halkode_pay->get_option('app_key');
     $merchant_key = $halkode_pay->get_option('merchant_key');
-    $merchant_id = $halkode_pay->get_option('merchant_id');
-    $sandbox = $halkode_pay->get_option('environment');
-
     $hash_key = generateRefundHashKey($invoice_id, $merchant_key, $api_secret);
     $token = getToken()->data->token;
     $headers = ['Accept: application/json', 'Content-Type: application/json', "Authorization: Bearer {$token}"];
-    $url = $sandbox == 'yes' ? 'https://testapp.halkode.com.tr/ccpayment/api/checkstatus' : 'https://app.halkode.com.tr/ccpayment/api/checkstatus';
 
     $array = [
         'invoice_id' => $invoice_id,
@@ -147,7 +136,7 @@ function checkStatus($invoice_id)
         'include_pending_status' => "true",
     ];
 
-    return getCurl($url, 'POST', json_encode($array), $headers);
+    return getCurl($halkode_pay->get_endpoint_url('/api/checkstatus'), 'POST', json_encode($array), $headers);
 }
 
 function generateRefundHashKey($invoice_id, $merchant_key, $app_secret)
@@ -260,29 +249,18 @@ function my_custom_public_page()
 
 
                 $halkode_pay = new halkode_sanalpos();
-                $environment = $halkode_pay->get_option('environment') == "yes" ? 'TRUE' : 'FALSE';
 
                 $post = array(
-
                     'merchant_key' => $halkode_pay->get_option('merchant_key'),
-
                     'invoice' => json_encode($invoice),
-
                     'currency_code' => get_option('woocommerce_currency'),
-
                     'name' => $result['name'],
-
                     'surname' => $result['surname']
-
                 );
 
-
-                //print_r($post); exit;
-
-                $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/purchase/link' : 'https://testapp.halkode.com.tr/ccpayment/purchase/link';
                 $headers = ['Content-Type: application/json'];
                 $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $environment_url);
+                curl_setopt($ch, CURLOPT_URL, $halkode_pay->get_endpoint_url("/ccpayment/purchase/link"));
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -331,12 +309,6 @@ function my_custom_public_page()
 
                     delete_post_meta($order_id, 'halkode_payment_form');
                     delete_post_meta($order_id, 'halkode_response');
-                    //echo $customer_order->get_checkout_order_received_url(); exit;
-                    // paid order marked
-                    // $customer_order->payment_complete();
-                    // // this is important part for empty cart
-                    // $woocommerce->cart->empty_cart();
-                    // Redirect to thank you page
                     header('Location: ' . $customer_order->get_checkout_order_received_url());
                     exit;
                 } else {
@@ -476,9 +448,6 @@ function get_installment()
         global $woocommerce;
 
         $halkode_pay = new halkode_sanalpos();
-
-        /* getpos request */
-
         $pos_post = [
             'credit_card' => $_POST['cc_number'],
             'amount' => $woocommerce->cart->total,
@@ -488,17 +457,13 @@ function get_installment()
             'app_secret' => $halkode_pay->get_option('app_secret'),
         ];
 
-        $environment = $halkode_pay->get_option('environment') == "yes" ? 'TRUE' : 'FALSE';
-        $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/getpos' : 'https://testapp.halkode.com.tr/ccpayment/api/getpos';
-
-
         if (!empty($_POST['recurring_options']['recurring_check']) && $_POST['recurring_options']['recurring_check'] == 'yes') {
             $pos_post['is_recurring'] = 1;
         }
 
         $headers = ['Accept: application/json', 'Content-Type: application/json', "Authorization: Bearer {$_POST['token']}"];
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $environment_url);
+        curl_setopt($ch, CURLOPT_URL, $halkode_pay->get_endpoint_url("/api/getpos"));
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($pos_post));
@@ -507,7 +472,6 @@ function get_installment()
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         $get_pos_response = json_decode(curl_exec($ch), true);
 
-        //print_r($get_pos_response); exit;
         curl_close($ch);
         if ($get_pos_response['status_code'] == 100) {
             $html = '';
@@ -602,18 +566,9 @@ function get_installment()
 
 function pay2d($token, $parameters)
 {
-
-
     $halkode_pay = new halkode_sanalpos();
-    $environment = $halkode_pay->get_option('environment') == "yes" ? 'TRUE' : 'FALSE';
-    if ($parameters['is_2d_card'] == 'yes') {
-        $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/payByCardTokenNonSecure' : 'https://testapp.halkode.com.tr/ccpayment/api/payByCardTokenNonSecure';
-    } else {
-        $environment_url = "FALSE" == $environment ? 'https://app.halkode.com.tr/ccpayment/api/paySmart2D' : 'https://testapp.halkode.com.tr/ccpayment/api/paySmart2D';
-    }
-
+    $endpoint = $parameters['is_2d_card'] == 'yes' ? "/api/payByCardTokenNonSecure" : "/api/paySmart2D";
     $headers = ['Accept: application/json', 'Content-Type: application/json', "Authorization: Bearer $token"];
-
 
     $options = array(
         CURLOPT_HTTPHEADER => $headers,
@@ -625,24 +580,12 @@ function pay2d($token, $parameters)
         CURLOPT_VERBOSE => false,
         CURLOPT_CUSTOMREQUEST => 'POST',
         CURLOPT_POSTFIELDS => json_encode($parameters),
-        //CURLOPT_SSL_VERIFYHOST => 0,
-        //CURLOPT_SSL_VERIFYPEER => 0,
     );
 
-    $ch = curl_init($environment_url);
+    $ch = curl_init($halkode_pay->get_endpoint_url($endpoint));
     curl_setopt_array($ch, $options);
     $content = curl_exec($ch);
-
-    $err = curl_errno($ch);
-    $errmsg = curl_error($ch);
-    $header = curl_getinfo($ch);
-    $rurl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-
-    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-
     curl_close($ch);
-
-
     return json_decode($content);
 }
 
